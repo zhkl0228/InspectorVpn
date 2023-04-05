@@ -6,9 +6,11 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <NetworkExtension/NetworkExtension.h>
 
-@interface ViewController : UIViewController
-
+@interface ViewController : UITableViewController {
+    NETunnelProviderManager *vpnManager;
+}
 
 @end
 
