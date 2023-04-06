@@ -77,7 +77,7 @@
 
 - (void) toggle: (UISwitch *) sender {
     if([sender isOn]) {
-        [self installProfile];
+        [self tryStartVpn];
     } else {
         [[vpnManager connection] stopVPNTunnel];
     }
@@ -113,12 +113,12 @@
             BOOL started = [[self->vpnManager connection] startVPNTunnelAndReturnError:nil];
             NSLog(@"saveToPreferencesWithCompletionHandler started=%d", started);
         } else {
-            [self installProfile];
+            [self tryStartVpn];
         }
     }];
 }
 
--(void) installProfile {
+-(void) tryStartVpn {
     [NETunnelProviderManager loadAllFromPreferencesWithCompletionHandler:^(NSArray<NETunnelProviderManager *> * _Nullable managers, NSError * _Nullable error) {
         self->vpnManager = [managers firstObject];
         NSLog(@"loadAllFromPreferencesWithCompletionHandler managers=%@, error=%@, manager=%@", managers, error, self->vpnManager);

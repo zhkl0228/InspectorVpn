@@ -1,5 +1,5 @@
 //
-//  AppProxyProvider.m
+//  PacketTunnelProvider.m
 //  InspectorVpnTunnel
 //
 //  Created by Banny on 2023/4/5.
@@ -12,12 +12,9 @@
 - (void) startTunnelWithOptions:(NSDictionary<NSString *,NSObject *> *)options completionHandler:(void (^)(NSError * _Nullable))completionHandler {
     NSLog(@"startTunnelWithOptions=%@, handler=%@", options, completionHandler);
     
-    NSString *vpn4 = @"10.1.10.1";
-    NSString *subnetMask4 = @"255.255.255.0";
-    
     NEPacketTunnelNetworkSettings *settings = [[NEPacketTunnelNetworkSettings alloc] initWithTunnelRemoteAddress: @"127.0.0.1"];
     
-    NEIPv4Settings *ipv4Settings = [[NEIPv4Settings alloc] initWithAddresses:[NSArray arrayWithObject: vpn4] subnetMasks: [NSArray arrayWithObject: subnetMask4]];
+    NEIPv4Settings *ipv4Settings = [[NEIPv4Settings alloc] initWithAddresses:[NSArray arrayWithObject: @"10.1.10.1"] subnetMasks: [NSArray arrayWithObject: @"255.255.255.0"]];
     NEIPv4Route *defaultRoute = [NEIPv4Route defaultRoute];
     [ipv4Settings setIncludedRoutes: [NSArray arrayWithObject: defaultRoute]];
     [ipv4Settings setExcludedRoutes: [NSArray arrayWithObjects:
