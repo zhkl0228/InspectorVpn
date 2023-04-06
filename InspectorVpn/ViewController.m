@@ -33,7 +33,7 @@
             
             [self.hostField setText: ip];
             [self.portField setText: [NSString stringWithFormat: @"%d", port]];
-            [self.toggle setEnabled: YES];
+            [self vpnStatusDidChanged: nil];
         }
     }
 }
@@ -84,7 +84,9 @@
             [self.toggle setOn: NO];
 
             [self.spinner stopAnimating];
-            [self.statusLabel setText: @"Invalid"];
+            if(self->vpnManager) {
+                [self.statusLabel setText: @"Invalid"];
+            }
             break;
         case NEVPNStatusDisconnected:
             [self.toggle setEnabled: [self.hostField hasText]];
@@ -141,8 +143,11 @@
     if (@available(iOS 14.2, *)) {
         [tunnelProtocol setExcludeLocalNetworks: YES];
     }
-    [tunnelProtocol setValue: [self.hostField text] forKey: @"host"];
-    [tunnelProtocol setValue: [self.portField text] forKey: @"port"];
+    NSDictionary *conf = @{
+        @"host" : [self.hostField text],
+        @"port" : [self.portField text]
+    };
+    [tunnelProtocol setProviderConfiguration: conf];
     
     [self->vpnManager setProtocolConfiguration: tunnelProtocol];
     [self->vpnManager setLocalizedDescription: @"InspectorVpn"];

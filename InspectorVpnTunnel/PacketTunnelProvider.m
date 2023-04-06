@@ -11,8 +11,10 @@
 @implementation PacketTunnelProvider
 
 - (void) startTunnelWithOptions:(NSDictionary<NSString *,NSObject *> *)options completionHandler:(void (^)(NSError * _Nullable))completionHandler {
-    NSString *host = [self.protocolConfiguration valueForKey: @"host"];
-    NSString *port = [self.protocolConfiguration valueForKey: @"port"];
+    NETunnelProviderProtocol *protocol = (NETunnelProviderProtocol *) self.protocolConfiguration;
+    NSDictionary *conf = [protocol providerConfiguration];
+    NSString *host = [conf valueForKey: @"host"];
+    NSString *port = [conf valueForKey: @"port"];
     NSLog(@"startTunnelWithOptions=%@, handler=%@, host=%@, port=%@", options, completionHandler, host, port);
     
     NEPacketTunnelNetworkSettings *settings = [[NEPacketTunnelNetworkSettings alloc] initWithTunnelRemoteAddress: @"127.0.0.1"];
