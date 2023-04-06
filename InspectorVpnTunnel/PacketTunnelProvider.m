@@ -11,7 +11,9 @@
 @implementation PacketTunnelProvider
 
 - (void) startTunnelWithOptions:(NSDictionary<NSString *,NSObject *> *)options completionHandler:(void (^)(NSError * _Nullable))completionHandler {
-    NSLog(@"startTunnelWithOptions=%@, handler=%@", options, completionHandler);
+    NSString *host = [self.protocolConfiguration valueForKey: @"host"];
+    NSString *port = [self.protocolConfiguration valueForKey: @"port"];
+    NSLog(@"startTunnelWithOptions=%@, handler=%@, host=%@, port=%@", options, completionHandler, host, port);
     
     NEPacketTunnelNetworkSettings *settings = [[NEPacketTunnelNetworkSettings alloc] initWithTunnelRemoteAddress: @"127.0.0.1"];
     
@@ -30,10 +32,12 @@
     
     __strong typeof(self) strongSelf = self;
     [self setTunnelNetworkSettings:settings completionHandler:^(NSError * _Nullable error) {
-        completionHandler(error);
         NSLog(@"setTunnelNetworkSettings error=%@", error);
         if(error) {
+            completionHandler(error);
             return;
+        } else {
+            completionHandler(nil);
         }
         self->canStop = NO;
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{

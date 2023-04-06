@@ -7,9 +7,11 @@
 
 #import <UIKit/UIKit.h>
 #import <NetworkExtension/NetworkExtension.h>
+#import "GCDAsyncUdpSocket.h"
 
-@interface ViewController : UITableViewController {
+@interface ViewController : UITableViewController <GCDAsyncUdpSocketDelegate> {
     NETunnelProviderManager *vpnManager;
+    GCDAsyncUdpSocket *udp;
 }
 
 @end

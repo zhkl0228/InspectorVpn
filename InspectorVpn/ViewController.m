@@ -5,18 +5,62 @@
 //  Created by Banny on 2023/4/5.
 //
 
+#import <arpa/inet.h>
 #import "ViewController.h"
+#import "DataInput.h"
 
 @interface ViewController ()
 @property (weak, nonatomic) IBOutlet UISwitch *toggle;
 @property (weak, nonatomic) IBOutlet UIActivityIndicatorView *spinner;
 @property (weak, nonatomic) IBOutlet UILabel *statusLabel;
+@property (weak, nonatomic) IBOutlet UITextField *hostField;
+@property (weak, nonatomic) IBOutlet UITextField *portField;
 @end
 
 @implementation ViewController
 
+- (void)udpSocket:(GCDAsyncUdpSocket *)sock didReceiveData:(NSData *)data fromAddress:(NSData *)address withFilterContext:(id)filterContext {
+    if([data length] == 7 &&
+       ([[DataInput alloc] init: [data bytes] length: (int) [data length]].readShort == 0x3)) {
+        DataInput *input = [[DataInput alloc] init: [data bytes] length: (int) [data length]];
+        NSString *vpn = [input readUTF];
+        if([@"vpn" isEqualToString: vpn]) {
+            uint16_t port = [input readShort] & 0xffffUL;
+            
+            struct sockaddr_in *addr = (struct sockaddr_in *)[address bytes];
+            NSString *ip = [NSString stringWithCString:inet_ntoa(addr->sin_addr) encoding:NSASCIIStringEncoding];
+            NSLog(@"didReceiveData ip=%@, port=%d", ip, port);
+            
+            [self.hostField setText: ip];
+            [self.portField setText: [NSString stringWithFormat: @"%d", port]];
+            [self.toggle setEnabled: YES];
+        }
+    }
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    if(udp == nil) {
+        self->udp = [[GCDAsyncUdpSocket alloc] initWithDelegate: self delegateQueue: dispatch_get_main_queue()];
+        [self->udp setIPv6Enabled: NO];
+        NSError *error = nil;
+        if([self->udp enableBroadcast: YES error: &error]) {
+            if([self->udp bindToPort: 20230 error: &error]) {
+                if(![self->udp beginReceiving: &error]) {
+                    NSLog(@"beginReceiving error=%@", error);
+                }
+            } else {
+                NSLog(@"bindToPort error=%@", error);
+            }
+        } else {
+            NSLog(@"enableBroadcast error=%@", error);
+        }
+    }
+    
+    [self.hostField setEnabled: NO];
+    [self.portField setEnabled: NO];
+    [self.toggle setEnabled: NO];
     
     [NETunnelProviderManager loadAllFromPreferencesWithCompletionHandler:^(NSArray<NETunnelProviderManager *> * _Nullable managers, NSError * _Nullable error) {
         self->vpnManager = [managers firstObject];
@@ -36,14 +80,14 @@
     NEVPNStatus status = [[vpnManager connection] status];
     switch (status) {
         case NEVPNStatusInvalid:
-            [self.toggle setEnabled: YES];
+            [self.toggle setEnabled: [self.hostField hasText]];
             [self.toggle setOn: NO];
 
             [self.spinner stopAnimating];
             [self.statusLabel setText: @"Invalid"];
             break;
         case NEVPNStatusDisconnected:
-            [self.toggle setEnabled: YES];
+            [self.toggle setEnabled: [self.hostField hasText]];
             [self.toggle setOn: NO];
 
             [self.spinner stopAnimating];
@@ -97,6 +141,8 @@
     if (@available(iOS 14.2, *)) {
         [tunnelProtocol setExcludeLocalNetworks: YES];
     }
+    [tunnelProtocol setValue: [self.hostField text] forKey: @"host"];
+    [tunnelProtocol setValue: [self.portField text] forKey: @"port"];
     
     [self->vpnManager setProtocolConfiguration: tunnelProtocol];
     [self->vpnManager setLocalizedDescription: @"InspectorVpn"];
