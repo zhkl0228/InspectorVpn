@@ -6,6 +6,7 @@
 //
 
 #import "PacketTunnelProvider.h"
+#import "GCDAsyncSocket.h"
 
 @implementation PacketTunnelProvider
 
@@ -19,7 +20,6 @@
     [ipv4Settings setIncludedRoutes: [NSArray arrayWithObject: defaultRoute]];
     [ipv4Settings setExcludedRoutes: [NSArray arrayWithObjects:
                                       [[NEIPv4Route alloc] initWithDestinationAddress:@"10.0.0.0" subnetMask:@"255.0.0.0"],
-                                      [[NEIPv4Route alloc] initWithDestinationAddress:@"127.0.0.0" subnetMask:@"255.0.0.0"],
                                       [[NEIPv4Route alloc] initWithDestinationAddress:@"192.168.0.0" subnetMask:@"255.255.0.0"],
                                       nil]];
     [settings setIPv4Settings: ipv4Settings];
@@ -27,14 +27,33 @@
     NEDNSSettings *dnsSettings = [[NEDNSSettings alloc] initWithServers: [NSArray arrayWithObjects: @"8.8.8.8", @"8.8.4.4", nil]];
     [dnsSettings setMatchDomains: [NSArray arrayWithObject: @""]];
     [settings setDNSSettings: dnsSettings];
+    
+    __strong typeof(self) strongSelf = self;
     [self setTunnelNetworkSettings:settings completionHandler:^(NSError * _Nullable error) {
         completionHandler(error);
         NSLog(@"setTunnelNetworkSettings error=%@", error);
+        if(error) {
+            return;
+        }
+        self->canStop = NO;
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+            while(strongSelf && !strongSelf->canStop) {
+                [strongSelf readPackets];
+            }
+            NSLog(@"Stop read packets");
+        });
+    }];
+}
+
+- (void) readPackets {
+    [self.packetFlow readPacketObjectsWithCompletionHandler:^(NSArray<NEPacket *> * _Nonnull packets) {
+        NSLog(@"readPackets: %@", packets);
     }];
 }
 
 - (void) stopTunnelWithReason:(NEProviderStopReason)reason completionHandler:(void (^)(void))completionHandler {
     NSLog(@"stopTunnelWithReason=%ld, handler=%@", (long)reason, completionHandler);
+    self->canStop = YES;
     completionHandler();
 }
 

@@ -63,6 +63,12 @@
             [self.spinner stopAnimating];
             [self.statusLabel setText: @"Connected"];
             break;
+        case NEVPNStatusReasserting:
+            [self.toggle setEnabled: NO];
+
+            [self.spinner startAnimating];
+            [self.statusLabel setText: @"Reasserting..."];
+            break;
         case NEVPNStatusDisconnecting:
             [self.toggle setEnabled: NO];
             

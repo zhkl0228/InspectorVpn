@@ -7,6 +7,7 @@
 
 #import <NetworkExtension/NetworkExtension.h>
 
-@interface PacketTunnelProvider : NEPacketTunnelProvider
-
+@interface PacketTunnelProvider : NEPacketTunnelProvider {
+    BOOL canStop;
+}
 @end
