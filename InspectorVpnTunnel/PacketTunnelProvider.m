@@ -6,7 +6,7 @@
 //
 
 #import "PacketTunnelProvider.h"
-#import "GCDAsyncSocket.h"
+#import "NSMutableData+Inspector.h"
 
 @implementation PacketTunnelProvider
 
@@ -38,29 +38,75 @@
         if(error) {
             completionHandler(error);
             return;
-        } else {
-            completionHandler(nil);
         }
-        self->canStop = NO;
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-            while(strongSelf && !strongSelf->canStop) {
-                [strongSelf readPackets];
-            }
-            NSLog(@"Stop read packets");
-        });
+        
+        [strongSelf connectSocket: completionHandler: host : (uint16_t) [port intValue]];
     }];
 }
 
-- (void) readPackets {
-    [self.packetFlow readPacketObjectsWithCompletionHandler:^(NSArray<NEPacket *> * _Nonnull packets) {
-        NSLog(@"readPackets: %@", packets);
-    }];
+- (void) socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port {
+    [sock readDataToLength:2 withTimeout:-1 tag:0];
+    NSLog(@"didConnectToHost=%@, port=%d", host, port);
+    self->canStop = NO;
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+        while(!self->canStop) {
+            [self.packetFlow readPacketObjectsWithCompletionHandler:^(NSArray<NEPacket *> * _Nonnull packets) {
+                NSMutableData *data = [NSMutableData data];
+                for(NEPacket *packet in packets) {
+                    NSData *ip = [packet data];
+                    [data writeShort: (uint16_t) [ip length]];
+                    [data appendData: ip];
+                }
+                NSLog(@"readPackets: %@, data=%@", packets, data);
+                [self->socket writeData: data withTimeout:-1 tag: 0x2];
+            }];
+        }
+        NSLog(@"Stop read packets");
+    });
+}
+
+- (void) socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
+    NSLog(@"didReadData sock=%@, data=%@, tag=%lu", sock, data, tag);
+    
+    if(tag == 0) {
+        const uint8_t *bytes = [data bytes];
+        uint16_t size = (bytes[0] << 8) | bytes[1];
+        NSLog(@"didReadData length=0x%x", size);
+        [sock readDataToLength:size withTimeout:-1 tag:1];
+    } else if(tag == 1) {
+        [self.packetFlow writePackets:[NSArray arrayWithObject: data] withProtocols:[NSArray arrayWithObject: [NSNumber numberWithInt:AF_INET]]];
+        [sock readDataToLength:2 withTimeout:-1 tag:0];
+    }
+}
+
+- (void) socket:(GCDAsyncSocket *)sock didWriteDataWithTag:(long)tag {
+    NSLog(@"didWriteDataWithTag sock=%@, tag=%ld", sock, tag);
+}
+
+- (void) connectSocket: (void (^)(NSError * _Nullable))completionHandler : (NSString *) host : (uint16_t) port {
+    self->socket = [[GCDAsyncSocket alloc] initWithDelegate: self delegateQueue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0)];
+    [self->socket enableBackgroundingOnSocket];
+    [self->socket setIPv6Enabled: NO];
+    
+    NSError *error = nil;
+    if(![self->socket connectToHost:host onPort:port error:&error]) {
+        completionHandler(error);
+    } else {
+        completionHandler(nil);
+    }
 }
 
 - (void) stopTunnelWithReason:(NEProviderStopReason)reason completionHandler:(void (^)(void))completionHandler {
     NSLog(@"stopTunnelWithReason=%ld, handler=%@", (long)reason, completionHandler);
     self->canStop = YES;
+    [self->socket disconnect];
+    self->socket = nil;
     completionHandler();
+}
+
+- (void) socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)err {
+    NSLog(@"socketDidDisconnect sock=%@, err=%@", sock, err);
+    [self cancelTunnelWithError: err];
 }
 
 @end

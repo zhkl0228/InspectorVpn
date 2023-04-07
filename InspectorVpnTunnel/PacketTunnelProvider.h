@@ -6,8 +6,10 @@
 //
 
 #import <NetworkExtension/NetworkExtension.h>
+#import "GCDAsyncSocket.h"
 
-@interface PacketTunnelProvider : NEPacketTunnelProvider {
+@interface PacketTunnelProvider : NEPacketTunnelProvider <GCDAsyncSocketDelegate> {
+    GCDAsyncSocket *socket;
     BOOL canStop;
 }
 @end

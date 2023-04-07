@@ -5,7 +5,6 @@
 //  Created by Banny on 2023/4/5.
 //
 
-#import <arpa/inet.h>
 #import "ViewController.h"
 #import "DataInput.h"
 
@@ -27,8 +26,7 @@
         if([@"vpn" isEqualToString: vpn]) {
             uint16_t port = [input readShort] & 0xffffUL;
             
-            struct sockaddr_in *addr = (struct sockaddr_in *)[address bytes];
-            NSString *ip = [NSString stringWithCString:inet_ntoa(addr->sin_addr) encoding:NSASCIIStringEncoding];
+            NSString *ip = [GCDAsyncUdpSocket hostFromAddress: address];
             NSLog(@"didReceiveData ip=%@, port=%d", ip, port);
             
             [self.hostField setText: ip];
