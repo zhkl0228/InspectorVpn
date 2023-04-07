@@ -38,26 +38,37 @@
     }
 }
 
+- (void)udpSocketDidClose:(GCDAsyncUdpSocket *)sock withError:(NSError *)error {
+    NSLog(@"udpSocketDidClose sock=%@, error=%@", sock, error);
+    
+    self->udp = nil;
+    [self tryStartUdpServer];
+}
+
+- (void)tryStartUdpServer {
+    if(self->udp) {
+        return;
+    }
+    self->udp = [[GCDAsyncUdpSocket alloc] initWithDelegate: self delegateQueue: dispatch_get_main_queue()];
+    [self->udp setIPv6Enabled: NO];
+    NSError *error = nil;
+    if([self->udp enableBroadcast: YES error: &error]) {
+        if([self->udp bindToPort: 20230 error: &error]) {
+            if(![self->udp beginReceiving: &error]) {
+                NSLog(@"beginReceiving error=%@", error);
+            }
+        } else {
+            NSLog(@"bindToPort error=%@", error);
+        }
+    } else {
+        NSLog(@"enableBroadcast error=%@", error);
+    }
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    if(udp == nil) {
-        self->udp = [[GCDAsyncUdpSocket alloc] initWithDelegate: self delegateQueue: dispatch_get_main_queue()];
-        [self->udp setIPv6Enabled: NO];
-        NSError *error = nil;
-        if([self->udp enableBroadcast: YES error: &error]) {
-            if([self->udp bindToPort: 20230 error: &error]) {
-                if(![self->udp beginReceiving: &error]) {
-                    NSLog(@"beginReceiving error=%@", error);
-                }
-            } else {
-                NSLog(@"bindToPort error=%@", error);
-            }
-        } else {
-            NSLog(@"enableBroadcast error=%@", error);
-        }
-    }
-    
+    [self tryStartUdpServer];
     [self.hostField setEnabled: NO];
     [self.portField setEnabled: NO];
     [self.toggle setEnabled: NO];
