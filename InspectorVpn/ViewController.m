@@ -122,13 +122,13 @@
             [self.toggle setEnabled: NO];
 
             [self.spinner startAnimating];
-            [self.statusLabel setText: @"Reasserting..."];
+            [self.statusLabel setText: @"Reasserting.."];
             break;
         case NEVPNStatusDisconnecting:
             [self.toggle setEnabled: NO];
             
             [self.spinner startAnimating];
-            [self.statusLabel setText: @"Disconnecting..."];
+            [self.statusLabel setText: @"Disconnecting"];
             break;
         default:
             NSLog(@"vpnStatusDidChanged notification=%@, status=%ld", notification, (long)status);

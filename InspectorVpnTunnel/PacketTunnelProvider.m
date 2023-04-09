@@ -37,16 +37,16 @@
         NSLog(@"setTunnelNetworkSettings error=%@", error);
         if(error) {
             completionHandler(error);
-            return;
+        } else {
+            [strongSelf connectSocket: completionHandler: host : (uint16_t) [port intValue]];
         }
-        
-        [strongSelf connectSocket: completionHandler: host : (uint16_t) [port intValue]];
     }];
 }
 
 - (void) socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port {
     if(self->completionHandler) {
         self->completionHandler(nil);
+        self->completionHandler = nil;
     }
     NSLog(@"didConnectToHost=%@, port=%d", host, port);
     self->canStop = NO;
@@ -95,6 +95,7 @@
     NSError *error = nil;
     if(![self->socket connectToHost:host onPort:port withTimeout:3 error:&error]) {
         completionHandler(error);
+        self->completionHandler = nil;
     }
 }
 
@@ -107,8 +108,13 @@
 }
 
 - (void) socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)err {
-    NSLog(@"socketDidDisconnect sock=%@, err=%@", sock, err);
-    [self cancelTunnelWithError: err];
+    NSLog(@"socketDidDisconnect sock=%@, err=%@, completionHandler=%@", sock, err, self->completionHandler);
+    if(self->completionHandler && err) {
+        self->completionHandler(err);
+        self->completionHandler = nil;
+    } else {
+        [self cancelTunnelWithError: err];
+    }
 }
 
 @end
