@@ -45,7 +45,9 @@
 }
 
 - (void) socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port {
-    [sock readDataToLength:2 withTimeout:-1 tag:0];
+    if(self->completionHandler) {
+        self->completionHandler(nil);
+    }
     NSLog(@"didConnectToHost=%@, port=%d", host, port);
     self->canStop = NO;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
@@ -58,24 +60,25 @@
                     [data appendData: ip];
                 }
                 NSLog(@"readPackets: %@, data=%@", packets, data);
-                [self->socket writeData: data withTimeout:-1 tag: 0x2];
+                [self->socket writeData: data withTimeout:-1 tag: TAG_WRITE_PACKET];
             }];
         }
         NSLog(@"Stop read packets");
     });
+    [sock readDataToLength:2 withTimeout:-1 tag:TAG_READ_SIZE];
 }
 
 - (void) socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
     NSLog(@"didReadData sock=%@, data=%@, tag=%lu", sock, data, tag);
     
-    if(tag == 0) {
+    if(tag == TAG_READ_SIZE) {
         const uint8_t *bytes = [data bytes];
         uint16_t size = (bytes[0] << 8) | bytes[1];
         NSLog(@"didReadData length=0x%x", size);
-        [sock readDataToLength:size withTimeout:-1 tag:1];
-    } else if(tag == 1) {
+        [sock readDataToLength:size withTimeout:-1 tag:TAG_READ_PACKET];
+    } else if(tag == TAG_READ_PACKET) {
         [self.packetFlow writePackets:[NSArray arrayWithObject: data] withProtocols:[NSArray arrayWithObject: [NSNumber numberWithInt:AF_INET]]];
-        [sock readDataToLength:2 withTimeout:-1 tag:0];
+        [sock readDataToLength:2 withTimeout:-1 tag:TAG_READ_SIZE];
     }
 }
 
@@ -88,11 +91,10 @@
     [self->socket enableBackgroundingOnSocket];
     [self->socket setIPv6Enabled: NO];
     
+    self->completionHandler = completionHandler;
     NSError *error = nil;
-    if(![self->socket connectToHost:host onPort:port error:&error]) {
+    if(![self->socket connectToHost:host onPort:port withTimeout:3 error:&error]) {
         completionHandler(error);
-    } else {
-        completionHandler(nil);
     }
 }
 
