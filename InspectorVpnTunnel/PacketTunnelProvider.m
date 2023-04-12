@@ -34,7 +34,7 @@
     
     __strong typeof(self) strongSelf = self;
     [self setTunnelNetworkSettings:settings completionHandler:^(NSError * _Nullable error) {
-        NSLog(@"setTunnelNetworkSettings error=%@", error);
+        NSLog(@"setTunnelNetworkSettings error=%@, appRules=%@, routingMethod=%ld", error, [strongSelf appRules], (long)[strongSelf routingMethod]);
         if(error) {
             completionHandler(error);
         } else {
@@ -58,8 +58,9 @@
                     NSData *ip = [packet data];
                     [data writeShort: (uint16_t) [ip length]];
                     [data appendData: ip];
+                    NEFlowMetaData *metaData = [packet metadata];
+                    NSLog(@"readPacket: packet=%@, metaData=%@", packet, metaData);
                 }
-                NSLog(@"readPackets: %@, data=%@", packets, data);
                 [self->socket writeData: data withTimeout:-1 tag: TAG_WRITE_PACKET];
             }];
         }

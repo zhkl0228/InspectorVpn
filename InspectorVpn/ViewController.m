@@ -67,15 +67,20 @@
     [super viewDidLoad];
     
     [self tryStartUdpServer];
-    [self.hostField setEnabled: NO];
-    [self.portField setEnabled: NO];
-    [self.toggle setEnabled: NO];
     
     [NETunnelProviderManager loadAllFromPreferencesWithCompletionHandler:^(NSArray<NETunnelProviderManager *> * _Nullable managers, NSError * _Nullable error) {
         self->vpnManager = [managers firstObject];
         
         if(self->vpnManager) {
+            NETunnelProviderProtocol *providerProtocol = (NETunnelProviderProtocol *) [self->vpnManager protocolConfiguration];
+            NSDictionary *conf = [providerProtocol providerConfiguration];
+            [self.hostField setText: [conf valueForKey: @"host"]];
+            [self.portField setText: [conf valueForKey: @"port"]];
             [self vpnStatusDidChanged: nil];
+        } else {
+            [self.hostField setEnabled: NO];
+            [self.portField setEnabled: NO];
+            [self.toggle setEnabled: NO];
         }
         
         NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
@@ -176,8 +181,9 @@
         }
         
         if(startImmediately) {
-            BOOL started = [[self->vpnManager connection] startVPNTunnelAndReturnError:nil];
-            NSLog(@"saveToPreferencesWithCompletionHandler started=%d", started);
+            NSError *error = nil;
+            BOOL started = [[self->vpnManager connection] startVPNTunnelAndReturnError:&error];
+            NSLog(@"saveToPreferencesWithCompletionHandler started=%d, error=%@, NETunnelProviderRoutingMethodSourceApplication=%ld", started, error, (long)NETunnelProviderRoutingMethodSourceApplication);
         } else {
             [self tryStartVpn];
         }
@@ -187,13 +193,16 @@
 -(void) tryStartVpn {
     [NETunnelProviderManager loadAllFromPreferencesWithCompletionHandler:^(NSArray<NETunnelProviderManager *> * _Nullable managers, NSError * _Nullable error) {
         self->vpnManager = [managers firstObject];
-        NSLog(@"loadAllFromPreferencesWithCompletionHandler managers=%@, error=%@, manager=%@", managers, error, self->vpnManager);
+        NSLog(@"loadAllFromPreferencesWithCompletionHandler managers=%@, error=%@, manager=%@, appRules=%@", managers, error, self->vpnManager, [self->vpnManager performSelector:@selector(appRules)]);
         if(error) {
             return;
         }
         if(self->vpnManager) {
             [self startVpn: YES];
         } else {
+//            NETunnelProviderManager *perAppVPN = [NETunnelProviderManager performSelector: @selector(forPerAppVPN)];
+//            NEAppRule *rule = [[NEAppRule alloc] initWithSigningIdentifier: @"jp.naver.line"];
+//            [perAppVPN performSelector:@selector(setAppRules:) withObject:[NSArray arrayWithObject: rule]];
             self->vpnManager = [NETunnelProviderManager new];
             [self startVpn: NO];
         }
