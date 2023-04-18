@@ -65,6 +65,8 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    [self.hostField setEnabled: NO];
+    [self.portField setEnabled: NO];
     
     [self tryStartUdpServer];
     
@@ -78,8 +80,6 @@
             [self.portField setText: [conf valueForKey: @"port"]];
             [self vpnStatusDidChanged: nil];
         } else {
-            [self.hostField setEnabled: NO];
-            [self.portField setEnabled: NO];
             [self.toggle setEnabled: NO];
         }
         
