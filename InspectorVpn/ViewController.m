@@ -52,7 +52,9 @@
     NSError *error = nil;
     if([self->udp enableBroadcast: YES error: &error]) {
         if([self->udp bindToPort: 20230 error: &error]) {
-            if(![self->udp beginReceiving: &error]) {
+            if([self->udp beginReceiving: &error]) {
+                NSLog(@"beginReceivingBroadcast");
+            } else {
                 NSLog(@"beginReceiving error=%@", error);
             }
         } else {
@@ -80,7 +82,8 @@
             [self.portField setText: [conf valueForKey: @"port"]];
             [self vpnStatusDidChanged: nil];
         } else {
-            [self.toggle setEnabled: NO];
+            [self.hostField setText: @"192.168.1.1"];
+            [self vpnStatusDidChanged: nil];
         }
         
         NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
