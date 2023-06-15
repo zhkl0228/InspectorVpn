@@ -19,7 +19,7 @@
 @implementation ViewController
 
 - (void)udpSocket:(GCDAsyncUdpSocket *)sock didReceiveData:(NSData *)data fromAddress:(NSData *)address withFilterContext:(id)filterContext {
-    if([data length] == 7 &&
+    if([data length] >= 7 &&
        ([[DataInput alloc] init: [data bytes] length: (int) [data length]].readShort == 0x3)) {
         DataInput *input = [[DataInput alloc] init: [data bytes] length: (int) [data length]];
         NSString *vpn = [input readUTF];
