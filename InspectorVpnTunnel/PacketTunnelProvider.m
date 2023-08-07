@@ -41,7 +41,7 @@
     
     __strong typeof(self) strongSelf = self;
     [self setTunnelNetworkSettings:settings completionHandler:^(NSError * _Nullable error) {
-        NSLog(@"setTunnelNetworkSettings error=%@, appRules=%@, routingMethod=%ld", error, [strongSelf appRules], (long)[strongSelf routingMethod]);
+        NSLog(@"setTunnelNetworkSettings error=%@, routingMethod=%ld", error, (long)[strongSelf routingMethod]);
         if(error) {
             completionHandler(error);
         } else {

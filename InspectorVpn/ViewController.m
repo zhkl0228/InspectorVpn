@@ -196,16 +196,13 @@
 -(void) tryStartVpn {
     [NETunnelProviderManager loadAllFromPreferencesWithCompletionHandler:^(NSArray<NETunnelProviderManager *> * _Nullable managers, NSError * _Nullable error) {
         self->vpnManager = [managers firstObject];
-        NSLog(@"loadAllFromPreferencesWithCompletionHandler managers=%@, error=%@, manager=%@, appRules=%@", managers, error, self->vpnManager, [self->vpnManager performSelector:@selector(appRules)]);
+        NSLog(@"loadAllFromPreferencesWithCompletionHandler managers=%@, error=%@, manager=%@", managers, error, self->vpnManager);
         if(error) {
             return;
         }
         if(self->vpnManager) {
             [self startVpn: YES];
         } else {
-//            NETunnelProviderManager *perAppVPN = [NETunnelProviderManager performSelector: @selector(forPerAppVPN)];
-//            NEAppRule *rule = [[NEAppRule alloc] initWithSigningIdentifier: @"jp.naver.line"];
-//            [perAppVPN performSelector:@selector(setAppRules:) withObject:[NSArray arrayWithObject: rule]];
             self->vpnManager = [NETunnelProviderManager new];
             [self startVpn: NO];
         }
