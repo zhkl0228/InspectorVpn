@@ -50,6 +50,25 @@
     }];
 }
 
+- (void) readPackets {
+    if(self->canStop) {
+        NSLog(@"Stop read packets");
+        return;
+    }
+    [self.packetFlow readPacketObjectsWithCompletionHandler:^(NSArray<NEPacket *> * _Nonnull packets) {
+        NSMutableData *data = [NSMutableData data];
+        for(NEPacket *packet in packets) {
+            NSData *ip = [packet data];
+            [data writeShort: (uint16_t) [ip length]];
+            [data appendData: ip];
+            NEFlowMetaData *metaData = [packet metadata];
+            NSLog(@"readPacket: packet=%@, metaData=%@", packet, metaData);
+        }
+        [self->socket writeData: data withTimeout:-1 tag: TAG_WRITE_PACKET];
+        [self readPackets];
+    }];
+}
+
 - (void) socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port {
     if(self->completionHandler) {
         self->completionHandler(nil);
@@ -58,20 +77,7 @@
     NSLog(@"didConnectToHost=%@, port=%d", host, port);
     self->canStop = NO;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
-        while(!self->canStop) {
-            [self.packetFlow readPacketObjectsWithCompletionHandler:^(NSArray<NEPacket *> * _Nonnull packets) {
-                NSMutableData *data = [NSMutableData data];
-                for(NEPacket *packet in packets) {
-                    NSData *ip = [packet data];
-                    [data writeShort: (uint16_t) [ip length]];
-                    [data appendData: ip];
-                    NEFlowMetaData *metaData = [packet metadata];
-                    NSLog(@"readPacket: packet=%@, metaData=%@", packet, metaData);
-                }
-                [self->socket writeData: data withTimeout:-1 tag: TAG_WRITE_PACKET];
-            }];
-        }
-        NSLog(@"Stop read packets");
+        [self readPackets];
     });
     [sock readDataToLength:2 withTimeout:-1 tag:TAG_READ_SIZE];
 }
