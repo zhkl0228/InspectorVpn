@@ -99,6 +99,7 @@
         case NEVPNStatusInvalid:
             [self.toggle setEnabled: [self.hostField hasText]];
             [self.toggle setOn: NO];
+            [self.hostField setEnabled: NO];
 
             [self.spinner stopAnimating];
             if(self->vpnManager) {
@@ -108,6 +109,7 @@
         case NEVPNStatusDisconnected:
             [self.toggle setEnabled: [self.hostField hasText]];
             [self.toggle setOn: NO];
+            [self.hostField setEnabled: YES];
 
             [self.spinner stopAnimating];
             [self.statusLabel setText: @"Disconnected"];
@@ -115,6 +117,7 @@
         case NEVPNStatusConnecting:
             [self.toggle setEnabled: NO];
             [self.toggle setOn: YES];
+            [self.hostField setEnabled: NO];
 
             [self.spinner startAnimating];
             [self.statusLabel setText: @"Connecting..."];
@@ -122,18 +125,21 @@
         case NEVPNStatusConnected:
             [self.toggle setEnabled: YES];
             [self.toggle setOn: YES];
+            [self.hostField setEnabled: NO];
 
             [self.spinner stopAnimating];
             [self.statusLabel setText: @"Connected"];
             break;
         case NEVPNStatusReasserting:
             [self.toggle setEnabled: NO];
+            [self.hostField setEnabled: NO];
 
             [self.spinner startAnimating];
             [self.statusLabel setText: @"Reasserting.."];
             break;
         case NEVPNStatusDisconnecting:
             [self.toggle setEnabled: NO];
+            [self.hostField setEnabled: NO];
             
             [self.spinner startAnimating];
             [self.statusLabel setText: @"Disconnecting"];
