@@ -29,6 +29,9 @@
             NSString *ip = [GCDAsyncUdpSocket hostFromAddress: address];
             NSLog(@"didReceiveData ip=%@, port=%d", ip, port);
             
+            if(self.hostField.isEditing || self.portField.isEditing) {
+                return;
+            }
             [self.hostField setText: ip];
             [self.portField setText: [NSString stringWithFormat: @"%d", port]];
             [self vpnStatusDidChanged: nil];
