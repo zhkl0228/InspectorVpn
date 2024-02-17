@@ -9,7 +9,7 @@
 #import <NetworkExtension/NetworkExtension.h>
 #import "GCDAsyncUdpSocket.h"
 
-@interface ViewController : UITableViewController <GCDAsyncUdpSocketDelegate> {
+@interface ViewController : UITableViewController <GCDAsyncUdpSocketDelegate, UITextFieldDelegate> {
     NETunnelProviderManager *vpnManager;
     GCDAsyncUdpSocket *udp;
 }

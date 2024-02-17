@@ -29,11 +29,12 @@
             NSString *ip = [GCDAsyncUdpSocket hostFromAddress: address];
             NSLog(@"didReceiveData ip=%@, port=%d", ip, port);
             
-            if(self.hostField.isEditing || self.portField.isEditing) {
+            NSString *ps = [NSString stringWithFormat: @"%d", port];
+            if(self.hostField.isEditing || self.portField.isEditing || [self.portField.text isEqual: ps]) {
                 return;
             }
             [self.hostField setText: ip];
-            [self.portField setText: [NSString stringWithFormat: @"%d", port]];
+            [self.portField setText: ps];
             [self vpnStatusDidChanged: nil];
         }
     }
@@ -68,10 +69,23 @@
     }
 }
 
+- (void) textFieldDidBeginEditing:(UITextField *)textField {
+    NSString *text = [textField text];
+    NSLog(@"textFieldDidBeginEditing: %@", text);
+}
+
+- (void) textFieldDidEndEditing:(UITextField *)textField {
+    NSString *text = [textField text];
+    NSLog(@"textFieldDidEndEditing: %@", text);
+    [self.toggle setEnabled: [self.hostField hasText] && [self.portField hasText]];
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
-    [self.hostField setEnabled: NO];
-    [self.portField setEnabled: NO];
+    [self.hostField setEnabled: YES];
+    [self.portField setEnabled: YES];
+    [self.hostField setDelegate: self];
+    [self.portField setDelegate: self];
     
     [self tryStartUdpServer];
     
@@ -100,7 +114,7 @@
     NEVPNStatus status = [[vpnManager connection] status];
     switch (status) {
         case NEVPNStatusInvalid:
-            [self.toggle setEnabled: [self.hostField hasText]];
+            [self.toggle setEnabled: [self.hostField hasText] && [self.portField hasText]];
             [self.toggle setOn: NO];
             [self.hostField setEnabled: NO];
             [self.portField setEnabled: NO];
@@ -111,7 +125,7 @@
             }
             break;
         case NEVPNStatusDisconnected:
-            [self.toggle setEnabled: [self.hostField hasText]];
+            [self.toggle setEnabled: [self.hostField hasText] && [self.portField hasText]];
             [self.toggle setOn: NO];
             [self.hostField setEnabled: YES];
             [self.portField setEnabled: YES];
