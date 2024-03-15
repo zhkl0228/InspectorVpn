@@ -59,8 +59,13 @@
         NSMutableData *data = [NSMutableData data];
         for(NEPacket *packet in packets) {
             NSData *ip = [packet data];
-            [data writeShort: (uint16_t) [ip length]];
-            [data appendData: ip];
+            uint16_t length = (uint16_t) [ip length];
+            uint8_t *ptr = (uint8_t *) [ip bytes];
+            for(int i = 0; i < length; i++) {
+                ptr[i] ^= VPN_MAGIC;
+            }
+            [data writeShort: length];
+            [data appendData: [NSData dataWithBytes: ptr length:length]];
             NEFlowMetaData *metaData = [packet metadata];
             NSLog(@"readPacket: packet=%@, metaData=%@", packet, metaData);
         }
@@ -75,6 +80,9 @@
         self->completionHandler = nil;
     }
     NSLog(@"didConnectToHost=%@, port=%d", host, port);
+    uint8_t osType = 0x1;
+    NSData *data = [NSData dataWithBytes: &osType length:1];
+    [sock writeData: data withTimeout:-1 tag:TAG_WRITE_PACKET];
     self->canStop = NO;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
         [self readPackets];
@@ -91,7 +99,12 @@
         NSLog(@"didReadData length=0x%x", size);
         [sock readDataToLength:size withTimeout:-1 tag:TAG_READ_PACKET];
     } else if(tag == TAG_READ_PACKET) {
-        [self.packetFlow writePackets:[NSArray arrayWithObject: data] withProtocols:[NSArray arrayWithObject: [NSNumber numberWithInt:AF_INET]]];
+        uint16_t length = (uint16_t) [data length];
+        uint8_t *ptr = (uint8_t *) [data bytes];
+        for(int i = 0; i < length; i++) {
+            ptr[i] ^= VPN_MAGIC;
+        }
+        [self.packetFlow writePackets:[NSArray arrayWithObject: [NSData dataWithBytes: ptr length:length]] withProtocols:[NSArray arrayWithObject: [NSNumber numberWithInt:AF_INET]]];
         [sock readDataToLength:2 withTimeout:-1 tag:TAG_READ_SIZE];
     }
 }
