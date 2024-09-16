@@ -19,9 +19,12 @@
 
 @implementation ViewController
 
-- (BOOL) canEdit {
+- (BOOL) canEdit:(NSString *)port {
     if(self.hostField.isEditing || self.portField.isEditing) {
         return NO;
+    }
+    if(![self.portField.text isEqual: port]) {
+        return YES;
     }
     NSString *host = [[self.hostField text] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     if([host length] > 0) {
@@ -46,8 +49,8 @@
             NSString *ip = [GCDAsyncUdpSocket hostFromAddress: address];
             NSLog(@"didReceiveData ip=%@, port=%d", ip, port);
             
-            if([self.hostField isEnabled] && [self.portField isEnabled] && [self canEdit]) {
-                NSString *ps = [NSString stringWithFormat: @"%d", port];
+            NSString *ps = [NSString stringWithFormat: @"%d", port];
+            if([self.hostField isEnabled] && [self.portField isEnabled] && [self canEdit: ps]) {
                 [self.hostField setText: ip];
                 [self.portField setText: ps];
                 [self vpnStatusDidChanged: nil];
