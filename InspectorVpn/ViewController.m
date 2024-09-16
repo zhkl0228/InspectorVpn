@@ -5,6 +5,7 @@
 //  Created by Banny on 2023/4/5.
 //
 
+#include <arpa/inet.h>
 #import "ViewController.h"
 #import "DataInput.h"
 
@@ -18,6 +19,22 @@
 
 @implementation ViewController
 
+- (BOOL) canEdit {
+    if(self.hostField.isEditing || self.portField.isEditing) {
+        return NO;
+    }
+    NSString *host = [[self.hostField text] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if([host length] > 0) {
+        const char *ipAddress = [host UTF8String];
+        struct in_addr addr;
+        int result = inet_pton(AF_INET, ipAddress, &addr);
+        NSLog(@"canEdit host=%@, ipAddress=%s, result=%d", host, ipAddress, result);
+        return result > 0;
+    } else {
+        return YES;
+    }
+}
+
 - (void)udpSocket:(GCDAsyncUdpSocket *)sock didReceiveData:(NSData *)data fromAddress:(NSData *)address withFilterContext:(id)filterContext {
     if([data length] >= 7 &&
        ([[DataInput alloc] init: [data bytes] length: (int) [data length]].readShort == 0x3)) {
@@ -29,13 +46,12 @@
             NSString *ip = [GCDAsyncUdpSocket hostFromAddress: address];
             NSLog(@"didReceiveData ip=%@, port=%d", ip, port);
             
-            NSString *ps = [NSString stringWithFormat: @"%d", port];
-            if(self.hostField.isEditing || self.portField.isEditing || [self.portField.text isEqual: ps]) {
-                return;
+            if([self.hostField isEnabled] && [self.portField isEnabled] && [self canEdit]) {
+                NSString *ps = [NSString stringWithFormat: @"%d", port];
+                [self.hostField setText: ip];
+                [self.portField setText: ps];
+                [self vpnStatusDidChanged: nil];
             }
-            [self.hostField setText: ip];
-            [self.portField setText: ps];
-            [self vpnStatusDidChanged: nil];
         }
     }
 }
@@ -78,6 +94,11 @@
     NSString *text = [textField text];
     NSLog(@"textFieldDidEndEditing: %@", text);
     [self.toggle setEnabled: [self.hostField hasText] && [self.portField hasText]];
+}
+
+- (BOOL) textFieldShouldReturn:(UITextField *)textField {
+    [textField resignFirstResponder];
+    return YES;
 }
 
 - (void)viewDidLoad {
