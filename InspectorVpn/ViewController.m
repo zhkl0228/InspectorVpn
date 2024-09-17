@@ -213,9 +213,11 @@
     if (@available(iOS 14.2, *)) {
         [tunnelProtocol setExcludeLocalNetworks: YES];
     }
+    NSString *host = [[self.hostField text] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *port = [[self.portField text] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSDictionary *conf = @{
-        @"host" : [self.hostField text],
-        @"port" : [self.portField text]
+        @"host" : host,
+        @"port" : port
     };
     [tunnelProtocol setProviderConfiguration: conf];
     
