@@ -80,9 +80,25 @@
         self->completionHandler = nil;
     }
     NSLog(@"didConnectToHost=%@, port=%d", host, port);
-    uint8_t osType = 0x1;
+    uint8_t osType = 0x81;
     NSData *data = [NSData dataWithBytes: &osType length:1];
     [sock writeData: data withTimeout:-1 tag:TAG_WRITE_PACKET];
+    {
+        NSMutableDictionary *dict = [NSMutableDictionary dictionary];
+        NSLocale *locale = [NSLocale currentLocale];
+        [dict setValue: [locale localeIdentifier] forKey: @"locale"];
+        [dict setValue: [locale objectForKey:NSLocaleLanguageCode] forKey: @"language"];
+        {
+            NSString *config = @"/var/mobile/Library/inspector_vpn_config.txt";
+            NSData *configData = [NSData dataWithContentsOfFile:config];
+            [dict setValue: [configData base64EncodedStringWithOptions:0] forKey: @"config"];
+        }
+        NSData *json = [NSJSONSerialization dataWithJSONObject:dict options: 0 error:nil];
+        NSMutableData *extraData = [NSMutableData data];
+        [extraData writeShort: (int) [json length]];
+        [extraData appendData: json];
+        [sock writeData: extraData withTimeout:-1 tag: TAG_WRITE_PACKET];
+    }
     self->canStop = NO;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
         [self readPackets];
