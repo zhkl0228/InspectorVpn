@@ -113,6 +113,7 @@
         NSLocale *locale = [NSLocale currentLocale];
         [dict setValue: [locale localeIdentifier] forKey: @"locale"];
         [dict setValue: [locale objectForKey:NSLocaleLanguageCode] forKey: @"language"];
+        [dict setValue: [locale objectForKey:NSLocaleCountryCode] forKey: @"country"];
         [dict setValue: [configData base64EncodedStringWithOptions:0] forKey: @"config"];
         NSData *json = [NSJSONSerialization dataWithJSONObject:dict options: 0 error:nil];
         NSMutableData *extraData = [NSMutableData data];
